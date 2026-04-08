@@ -21,9 +21,11 @@ tokenizer_koto_prompt = AutoTokenizer.from_pretrained("ku-nlp/deberta-v3-base-ja
 tokenizer_koto_text = AutoTokenizer.from_pretrained("line-corporation/line-distilbert-base-japanese", trust_remote_code=True)
 
 class KotoDama_Prompt(PreTrainedModel):
+    _tied_weights_keys = []
 
     def __init__(self, config):
         super().__init__(config)
+        self.all_tied_weights_keys = {}
         
         self.backbone = AutoModel.from_config(config)
 
@@ -67,9 +69,11 @@ class KotoDama_Prompt(PreTrainedModel):
 
 
 class KotoDama_Text(PreTrainedModel):
+    _tied_weights_keys = []
 
     def __init__(self, config):
         super().__init__(config)
+        self.all_tied_weights_keys = {}
         
         self.backbone = AutoModel.from_config(config)
 

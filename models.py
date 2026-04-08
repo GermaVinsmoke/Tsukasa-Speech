@@ -10,6 +10,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 
+from checkpoint_utils import load_torch_checkpoint
+
 from Utils.ASR.models import ASRCNN
 from Utils.JDC.model import JDCNet
 
@@ -820,7 +822,7 @@ def load_F0_models(path):
     # load F0 model
 
     F0_model = JDCNet(num_class=1, seq_len=192)
-    params = torch.load(path, map_location='cpu')['net']
+    params = load_torch_checkpoint(path, map_location='cpu')['net']
     F0_model.load_state_dict(params)
     _ = F0_model.train()
     
@@ -892,7 +894,7 @@ def load_ASR_models(ASR_MODEL_PATH, ASR_MODEL_CONFIG):
 
     def _load_model(model_config, model_path):
         model = ASRCNN(**model_config)
-        params = torch.load(model_path, map_location='cpu')['model']
+        params = load_torch_checkpoint(model_path, map_location='cpu')['model']
         model.load_state_dict(params)
         return model
 
@@ -993,7 +995,7 @@ def build_model(args, text_aligner, pitch_extractor, bert, KotoDama_Prompt, Koto
 
 
 def load_checkpoint(model, optimizer, path, load_only_params=False, ignore_modules=[]):
-    state = torch.load(path, map_location='cpu')
+    state = load_torch_checkpoint(path, map_location='cpu')
     params = state['net']
     print('loading the ckpt using the correct function.')
 
