@@ -1,5 +1,5 @@
 INTROTXT = """# 
-Repo -> [Hugging Face - 🤗](https://huggingface.co/Respair/Project_Kanade_SpeechModel)
+Repo -> [Hugging Face - 🤗](https://huggingface.co/Respair/Tsukasa_Speech/edit/main/app_tsuka.py)
 This space uses Tsukasa (24khz).
 **Check the Read me tabs down below.** <br>
 Enjoy!
@@ -9,6 +9,7 @@ import random
 import importable
 import torch
 import os
+import socket
 from Utils.phonemize.mixed_phon import smart_phonemize
 import numpy as np
 import pickle
@@ -78,12 +79,19 @@ theme = gr.themes.Base(
 
 from Modules.diffusion.sampler import DiffusionSampler, ADPM2Sampler, KarrasSchedule
 
-voicelist = [v for v in os.listdir("/home/ubuntu/Kanade_Project/gradio/Tsukasa_Speech/reference_sample_wavs")]
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+REFERENCE_WAV_DIR = os.path.join(BASE_DIR, "reference_sample_wavs")
+
+voicelist = sorted(
+    v for v in os.listdir(REFERENCE_WAV_DIR)
+    if os.path.isfile(os.path.join(REFERENCE_WAV_DIR, v))
+)
+default_voice = voicelist[min(5, len(voicelist) - 1)] if voicelist else None
 
 
 
 for v in voicelist:
-    voices[v] = f'reference_sample_wavs/{v}'
+    voices[v] = os.path.join(REFERENCE_WAV_DIR, v)
     
 
 with open(f'Inference/random_texts.txt', 'r') as r:
@@ -120,6 +128,19 @@ def get_random_prompt_pair():
     
     last_idx = random_idx
     return inputs[random_idx], prompts[random_idx]
+
+
+def get_server_port():
+    configured_port = os.getenv("GRADIO_SERVER_PORT")
+    if configured_port:
+        return int(configured_port)
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.bind(("127.0.0.1", 0))
+            return sock.getsockname()[1]
+    except OSError:
+        return 7860
 
 def Synthesize_Audio(text, voice, voice2, vcsteps, embscale, alpha, beta, ros, progress=gr.Progress()):
 
@@ -253,8 +274,8 @@ with gr.Blocks() as audio_inf:
     with gr.Row():
         with gr.Column(scale=1):
             inp = gr.Textbox(label="Text", info="Enter the text", value="きみの存在は、私の心の中で燃える小さな光のよう。きみがいない時、世界は白黒の写真みたいに寂しくて、何も輝いてない。きみの笑顔だけが、私の灰色の日々に色を塗ってくれる。離れてる時間は、めちゃくちゃ長く感じられて、きみへの想いは風船みたいにどんどん膨らんでいく。きみなしの世界なんて、想像できないよ。",  interactive=True, scale=5)
-            voice = gr.Dropdown(voicelist, label="Voice", info="Select a default voice.", value=voicelist[5], interactive=True)
-            voice_2 = gr.Audio(label="Upload your own Audio", interactive=True, type='filepath', max_length=300, waveform_options={'waveform_color': '#a3ffc3', 'waveform_progress_color': '#e972ab'})
+            voice = gr.Dropdown(voicelist, label="Voice", info="Select a default voice.", value=default_voice, interactive=True)
+            voice_2 = gr.Audio(label="Upload your own Audio", interactive=True, type='filepath', waveform_options={'waveform_color': '#a3ffc3', 'waveform_progress_color': '#e972ab'})
             
             with gr.Accordion("Advanced Parameters", open=False):
 
@@ -414,15 +435,8 @@ over the generation process, which means it's easy to inadvertently produce unim
 
 <p>
 <b>Kotodama</b> and the <b>Diffusion sampler</b> can significantly help guide the generation towards<br>
-something that aligns with your input, but they aren't foolproof.
-</p>
-
-<p>
-The model's peak performance is achieved when the Diffusion sampler and Kotodama work seamlessly together.<br>
-However, we won't see that level of performance here because this checkpoint is somewhat undertrained<br>
-due to my time and resource constraints. (Tsumugi should be better in this regard, <br>
-albeit if the diffusion works at all on your hardware.) <br>
-Hopefully, you can further fine-tune this model (or train from scratch) to achieve even better results! 
+something that aligns with your input, but they aren't foolproof. turn off the diffusion sampler or <br>
+set it to very low values if it doesn't sound good to you. <br>
 </p>
 
 <p>
@@ -526,15 +540,9 @@ notes_jp = """
 
 <p>
 <b>Kotodama</b>と<b>Diffusionサンプラー</b>は、入力に沿ったものを生成するための大きな助けとなりますが、<br>
-万全というわけではありません。
+万全というわけではありません。良いアウトプットが出ない場合は、ディフュージョンサンプラーをオフにするか、非常に低い値に設定してください。
 </p>
 
-<p>
-モデルの最高性能は、DiffusionサンプラーとKotodamaがシームレスに連携することで達成されます。しかし、<br>
-このチェックポイントは時間とリソースの制約からややTrain不足であるため、そのレベルの性能はここでは見られません。<br>
-(この件について、「紬」のチェックポイントの方がいいかもしれません。でもまぁ、みなさんのハードに互換性があればね。）<br>
-おそらく、このモデルをさらにFinetuningする（または最初からTrainする）ことで、より良い結果が得られるでしょう。
-</p>
 
 _____________________________________________<br>\n
 <strong>音声デザインとプロンプトに関する有用なメモ:</strong><br>
@@ -633,7 +641,7 @@ custom_css = """
 
 
 
-with gr.Blocks(title="Tsukasa 司", css=custom_css + "footer{display:none !important}", theme="Respair/Shiki@1.2.1") as demo:
+with gr.Blocks(title="Tsukasa 司") as demo:
     # gr.DuplicateButton("Duplicate Space")
     gr.Markdown(INTROTXT)
 
@@ -642,4 +650,12 @@ with gr.Blocks(title="Tsukasa 司", css=custom_css + "footer{display:none !impor
                        ['Kotodama Text Inference', 'Voice-guided Inference','Prompt-guided Inference [Highly Experimental - not optimized]', 'Read Me! [English]', 'Read Me! [日本語]'])
 
 if __name__ == "__main__":
-    demo.queue(api_open=False, max_size=15).launch(show_api=False, share=True)
+    share_app = os.getenv("GRADIO_SHARE", "").lower() in {"1", "true", "yes"}
+    server_port = get_server_port()
+    demo.queue(api_open=False, max_size=15).launch(
+        share=share_app,
+        server_name="127.0.0.1",
+        server_port=server_port,
+        theme=theme,
+        css=custom_css + "footer{display:none !important}",
+    )

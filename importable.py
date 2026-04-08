@@ -53,6 +53,7 @@ import torchaudio
 import librosa
 from nltk.tokenize import word_tokenize
 
+from checkpoint_utils import load_torch_checkpoint
 from models import *
 from Modules.KotoDama_sampler import tokenizer_koto_prompt, tokenizer_koto_text
 from utils import *
@@ -133,7 +134,7 @@ model = build_model(model_params, text_aligner, pitch_extractor, plbert, KotoDam
 _ = [model[key].eval() for key in model]
 _ = [model[key].to(device) for key in model]
 
-params_whole = torch.load("Models/Style_Tsukasa_v02/Top_ckpt_24khz.pth", map_location='cpu')
+params_whole = load_torch_checkpoint("Models/Style_Tsukasa_v02/Top_ckpt_24khz.pth", map_location='cpu')
 params = params_whole['net']
 
 
@@ -387,22 +388,36 @@ def merging_sentences(lst):
 
 import os
 
-
-from openai import OpenAI
-
-
 openai_api_key = "EMPTY"
 openai_api_base = "http://localhost:8000/v1"
-
-client = OpenAI(
-    api_key=openai_api_key,
-    base_url=openai_api_base,
-)
+client = None
 
 model_name = "Respair/Japanese_Phoneme_to_Grapheme_LLM"
 
 
+def _get_openai_client():
+    global client
+
+    if client is not None:
+        return client
+
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise RuntimeError(
+            "The non-Japanese p2g path requires the openai package and a "
+            f"compatible server at {openai_api_base}."
+        ) from exc
+
+    client = OpenAI(
+        api_key=openai_api_key,
+        base_url=openai_api_base,
+    )
+    return client
+
+
 def p2g(param):
+    client = _get_openai_client()
 
     chat_response = client.chat.completions.create(
 

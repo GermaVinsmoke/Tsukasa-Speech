@@ -3,6 +3,8 @@ import yaml
 import torch
 from transformers import AlbertConfig, AlbertModel
 
+from checkpoint_utils import load_torch_checkpoint
+
 class CustomAlbert(AlbertModel):
     def forward(self, *args, **kwargs):
         # Call the original forward method
@@ -27,7 +29,7 @@ def load_plbert(log_dir):
     iters = [int(f.split('_')[-1].split('.')[0]) for f in ckpts if os.path.isfile(os.path.join(log_dir, f))]
     iters = sorted(iters)[-1]
 
-    checkpoint = torch.load(log_dir + "/step_" + str(iters) + ".t7", map_location='cpu')
+    checkpoint = load_torch_checkpoint(log_dir + "/step_" + str(iters) + ".t7", map_location='cpu')
     state_dict = checkpoint['net']
     from collections import OrderedDict
     new_state_dict = OrderedDict()
