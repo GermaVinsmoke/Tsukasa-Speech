@@ -1,6 +1,3 @@
-print("NLTK")
-import nltk
-nltk.download('punkt')
 print("SCIPY")
 from scipy.io.wavfile import write
 print("TORCH STUFF")
@@ -51,18 +48,11 @@ from torch import nn
 import torch.nn.functional as F
 import torchaudio
 import librosa
-from nltk.tokenize import word_tokenize
 
 from checkpoint_utils import load_torch_checkpoint
 from models import *
 from Modules.KotoDama_sampler import tokenizer_koto_prompt, tokenizer_koto_text
 from utils import *
-
-import nltk
-nltk.download('punkt_tab')
-
-from nltk.tokenize import sent_tokenize
-
 from konoha import SentenceTokenizer
 
 
